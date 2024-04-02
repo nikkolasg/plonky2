@@ -178,7 +178,7 @@ impl<F: RichField + Extendable<D>, const B: usize, const D: usize> SimpleGenerat
     for BaseSplitGenerator<B>
 {
     fn id(&self) -> String {
-        format!("BaseSplitGenerator + Base: {B}")
+      format!("BaseSplitGenerator + Base: {B}")
     }
 
     fn dependencies(&self) -> Vec<Target> {
