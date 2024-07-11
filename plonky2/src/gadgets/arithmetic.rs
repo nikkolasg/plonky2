@@ -357,30 +357,40 @@ impl<F: RichField + Extendable<D>, const D: usize> CircuitBuilder<F, D> {
         let maybe_x = self.mul(b.target, x);
         self.mul_add(not_b.target, y, maybe_x)
     }
-   
+
     /// Utility function employed to compute both `is_equal` and `is_not_equal` at the same time
-    pub(crate) fn is_equal_and_not_equal(&mut self, x: Target, y: Target) -> (BoolTarget, BoolTarget) {
+    pub(crate) fn is_equal_and_not_equal(
+        &mut self,
+        x: Target,
+        y: Target,
+    ) -> (BoolTarget, BoolTarget) {
         let zero = self.zero();
         let _true = self._true();
         let _false = self._false();
+
+        // check if one of the operand is the zero constant, then we can save
+        // one arithmetic operation
+        let (x, y, diff) = match (self.target_as_constant(x), self.target_as_constant(y)) {
+            (Some(a), Some(b)) => {
+                if a == b {
+                    return (_true, _false);
+                } else {
+                    return (_false, _true);
+                }
+            }
+            (Some(field_zero), None) if field_zero == F::ZERO =>
+            // swap targets to ensure that diff computed by `EqualityGenerator` is equal to y
+            {
+                (y, x, y)
+            }
+            (None, Some(field_zero)) if field_zero == F::ZERO => (x, y, x),
+            (_, _) => (x, y, self.sub(x, y)),
+        };
 
         let equal = self.add_virtual_bool_target_unsafe();
         let not_equal = self.not(equal);
         let inv = self.add_virtual_target();
         self.add_simple_generator(EqualityGenerator { x, y, equal, inv });
-
-        // check if one of the operand is the zero constant, then we can save
-        // one arithmetic operation
-        let diff = match (self.target_as_constant(x), self.target_as_constant(y)) {
-            (Some(a), Some(b)) => if a == b {
-                return (_true, _false)
-            } else {
-                return (_false, _true)
-            },
-            (Some(field_zero), None) if field_zero == F::ZERO => y,
-            (None, Some(field_zero)) if field_zero == F::ZERO => x,
-            (_, _) => self.sub(x,y)
-        };
 
         let not_equal_check = self.mul(equal.target, diff);
 
@@ -454,12 +464,15 @@ pub(crate) struct BaseArithmeticOperation<F: Field64> {
     addend: Target,
 }
 
-
 #[cfg(test)]
 mod tests {
-    use plonky2_field::{goldilocks_field::GoldilocksField, types::{Field, Sample}};
+    use plonky2_field::goldilocks_field::GoldilocksField;
+    use plonky2_field::types::{Field, Sample};
 
-    use crate::{iop::witness::{PartialWitness, WitnessWrite}, plonk::{circuit_builder::CircuitBuilder, circuit_data::CircuitConfig, config::PoseidonGoldilocksConfig}};
+    use crate::iop::witness::{PartialWitness, WitnessWrite};
+    use crate::plonk::circuit_builder::CircuitBuilder;
+    use crate::plonk::circuit_data::CircuitConfig;
+    use crate::plonk::config::PoseidonGoldilocksConfig;
     type F = GoldilocksField;
     const D: usize = 2;
 
@@ -470,6 +483,8 @@ mod tests {
         let y = builder.add_virtual_target();
         let zero = builder.zero();
         let is_zero = builder.is_equal(x, zero);
+        let is_zero_swap = builder.is_equal(zero, x);
+        builder.connect(is_zero.target, is_zero_swap.target);
         let is_eq = builder.is_equal(x, y);
         let is_not_eq = builder.is_not_equal(x, y);
         builder.register_public_input(is_eq.target);
@@ -491,8 +506,5 @@ mod tests {
             assert_eq!(proof.public_inputs[1], F::ONE);
             assert_eq!(proof.public_inputs[0], F::ZERO);
         }
-
-
-
     }
 }
