@@ -386,8 +386,8 @@ impl<F: RichField + Extendable<D> + Poseidon2, const D: usize> Gate<F, D> for Po
     }
 }
 
-#[derive(Debug)]
-struct Poseidon2Generator<F: RichField + Extendable<D> + Poseidon2, const D: usize> {
+#[derive(Debug, Clone)]
+pub struct Poseidon2Generator<F: RichField + Extendable<D> + Poseidon2, const D: usize> {
     row: usize,
     _phantom: PhantomData<F>,
 }
