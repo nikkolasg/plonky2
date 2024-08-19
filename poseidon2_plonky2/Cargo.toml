@@ -7,13 +7,13 @@ edition = "2021"
 
 [dependencies]
 anyhow = "1.0.69"
-plonky2 = "0.2.2"
+plonky2 = { path = "../plonky2" }
 rstest = "0.17.0"
 serial_test = "1.0.0"
 unroll = "0.1.5"
 
 [dev-dependencies]
-criterion = {version = "0.4.0", default-features = false }
+criterion = { version = "0.4.0", default-features = false }
 env_logger = "0.10.0"
 log = "0.4.17"
 rand_chacha = "0.3.1"
@@ -38,4 +38,3 @@ harness = false
 [[bench]]
 name = "recursion"
 harness = false
-
