@@ -174,7 +174,7 @@ unsafe fn const_layer_full(
 /// Full S-box.
 #[inline(always)]
 #[unroll_for_loops]
-unsafe fn sbox_layer_full(state: [u64; WIDTH]) -> [u64; WIDTH] {
+pub unsafe fn sbox_layer_full(state: [u64; WIDTH]) -> [u64; WIDTH] {
     // This is done in scalar. S-boxes in vector are only slightly slower throughput-wise but have
     // an insane latency (~100 cycles) on the M1.
 
